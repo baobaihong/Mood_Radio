@@ -11,7 +11,6 @@ client = openai.OpenAI(
 )
 
 def respond_to_question(question, history_messages):
-
     # define respond prompt
     respond_prompt = "Based on previous conversation history and user's input audio, respond to this user with care and understanding, try to solve his/her emotional problem if there is one."
 
