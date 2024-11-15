@@ -1,12 +1,20 @@
-import time
 from dotenv import load_dotenv
 import os
 import spotipy
 from spotipy.oauth2 import SpotifyOAuth
-import openai
+from openai_client import get_openai_client
+import random
+from pydantic import BaseModel
+import asyncio
 
 # Load environment variables
 load_dotenv()
+# Get OpenAI client
+client = get_openai_client()
+
+class Music_list(BaseModel):
+    music_list: list[str]
+    
 
 # Authenticate with Spotify using OAuth
 scope = "user-modify-playback-state user-read-playback-state"
@@ -20,14 +28,11 @@ sp = spotipy.Spotify(
     )
 )
 
-# Authenticate with OpenAI API Backend
-client = openai.OpenAI(
-    api_key=os.getenv("OPENAI_API_KEY"),
-    base_url="http://f679f04b577a12e64831cce196589364.api-forwards.com/v1",
-)
+async def dj(color, host_prompt, opening=False, ready_event=None):
+    song_name = pick_music(color, host_prompt)
+    await play_music(song_name, opening, ready_event)
 
-
-def play_music(song_name):
+async def play_music(song_name, opening=False, ready_event=None):
     """
     Searches for a song by its name and plays it in the web browser.
 
@@ -48,17 +53,43 @@ def play_music(song_name):
             sp.start_playback(device_id=device_id, uris=[track_uri])
             sp.volume(100)
             print(f"Playing {track['name']} by {track['artists'][0]['name']}")
-            # Wait for 15 seconds
-            time.sleep(20)
-            # Gradually decrease the volume from 100 to 30
-            for volume in range(100, 40, -2):
-                sp.volume(volume, device_id=device_id)
-                time.sleep(0.2)  # Adjust the sleep time if needed
+            if opening:
+                await asyncio.sleep(20)
+                for volume in range(100, 0, -2):
+                    sp.volume(volume, device_id=device_id)
+                    await asyncio.sleep(0.2)
+                    if volume <= 40 and ready_event:
+                        ready_event.set()
+                    if volume <= 10:
+                        sp.pause_playback(device_id=device_id)
+                        print("Finished playing opening music")
+                        break
         else:
             print("No active playback device found.")
     else:
         print("Song not found.")
 
+def pick_music(color, prompt):
+    completion = client.beta.chat.completions.parse(
+        model="gpt-4o-mini",
+        messages=[
+            {
+                "role": "system",
+                "content": "You are a music DJ working in a radio station, together with a radio host. Your job is to pick intro music for a radio that resonate with audience's emotions expressed as color and the prompt for the host. You'll be provided with the color and the prompt. Recommend 5 proper instrumental, non-lyric songs that can serve as background music. Only provide the names of the songs, separated by commas.",
+            },
+            {
+                "role": "user",
+                "content": f"Hey DJ, Today's color theme is: {color} and host's prompt is: {prompt}, pick 5 background music options for the host's opening remark!"
+            }
+        ],
+        response_format=Music_list
+    )
+    
+    music_list = completion.choices[0].message.parsed.music_list
+    selected_music = random.choice(music_list)
+    print(f"Selected music: {selected_music}")
+    return selected_music
+    
 
 # def reset_user():
 #     """
@@ -71,26 +102,12 @@ def play_music(song_name):
 #         print("No user session found.")
 
 # reset_user()
-
-def pick_music(emotion):
-    completion = client.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=[
-            {
-                "role": "system",
-                "content": "You are a music DJ working in a radio station, your job is to pick background music for a radio that heal audience's different emotions. You'll be provided with a emotion theme, try to recommend proper instrumental, non-lyric music that can be served as background music , remember only provide one song at a time and only the name of the song since the output will be used directly as a parameter for another function.",
-            },
-            {
-                "role": "user",
-                "content": f"Hey DJ, Today's emotion theme is: {emotion}, pick a background music for the host!"
-            }
-        ]
-    )
-    
-    music = completion.choices[0].message.content
-    print(music)
-    return music
-    
     
 # song_name = pick_music("blue")
 # play_music(song_name)
+
+async def main():
+    await dj("yellow", os.getenv("YELLOW_PROMPT"), True)
+
+if __name__ == "__main__":
+    asyncio.run(main())
