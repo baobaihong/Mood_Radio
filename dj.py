@@ -65,9 +65,9 @@ async def play_music(song_name, opening=False, ready_event=None):
                         print("Finished playing opening music")
                         break
         else:
-            print("No active playback device found.")
+            print("No active playback device found.") #TODO: auto open the spotify website in the browser to make it fully automated
     else:
-        print("Song not found.")
+        print("Song not found.") #TODO: prepare a plan B if the song is not found
 
 def pick_music(color, prompt):
     completion = client.beta.chat.completions.parse(
@@ -100,14 +100,3 @@ def pick_music(color, prompt):
 #         print("User reset. Please re-login.")
 #     else:
 #         print("No user session found.")
-
-# reset_user()
-    
-# song_name = pick_music("blue")
-# play_music(song_name)
-
-async def main():
-    await dj("yellow", os.getenv("YELLOW_PROMPT"), True)
-
-if __name__ == "__main__":
-    asyncio.run(main())

@@ -1,44 +1,47 @@
-import base64
-import requests
-from openai import OpenAI
-from dotenv import load_dotenv
-import os
+import json
+from dj import play_music
+from openai_client import get_openai_client
 
+client = get_openai_client()
 
-load_dotenv()
-API_KEY = os.getenv("OPENAI_API_KEY")
-
-client = OpenAI(
-    api_key=API_KEY,
-    base_url="http://f679f04b577a12e64831cce196589364.api-forwards.com/v1",
-)
-
-# Fetch the audio file and convert it to a base64 encoded string
-url = "https://openaiassets.blob.core.windows.net/$web/API/docs/audio/alloy.wav"
-response = requests.get(url)
-response.raise_for_status()
-wav_data = response.content
-encoded_string = base64.b64encode(wav_data).decode("utf-8")
-
-completion = client.chat.completions.create(
-    model="gpt-4o-audio-preview",
-    modalities=["text", "audio"],
-    audio={"voice": "alloy", "format": "wav"},
-    messages=[
-        {
-            "role": "user",
-            "content": [
-                {
-                    "type": "text",
-                    "text": "Explain the input audio to a 6 year old child",
+tools = [
+    {
+        "type": "function",
+        "function": {
+            "name": "play_music", 
+            "description": "Play the song for the user.", 
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "song_name": {"type": "string", "description": "The name of the song to play."}
                 },
-                {
-                    "type": "input_audio",
-                    "input_audio": {"data": encoded_string, "format": "wav"},
-                },
-            ],
-        },
-    ],
-)
+                "required": ["song_name"],
+                "additionalProperties": False
+            }
+        }
+    }
+]
 
-print(completion.choices[0].message.audio.transcript)
+async def main():
+    response = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[
+            {"role": "system", "content": "Reply to ease audiences' emotions with comforting, relieving speeches and recommend a song at the same time for him or her to listen. Call the function in response to let the user listen to the song."},
+            {"role": "user", "content": "I feel sad and exhausted."},
+        ],
+        tools=tools,
+        tool_choice={"type": "function", "function": {"name": "play_music"}}
+    )
+
+    print(response.choices[0].message.content)
+    if response.choices[0].message.tool_calls:
+        tool_call = response.choices[0].message.tool_calls[0]
+        arguments = json.loads(tool_call.function.arguments)
+        print(f"Playing {arguments['song_name']}")
+        await play_music(arguments['song_name'])
+    else:
+        print("No song was recommended by the AI")
+
+if __name__ == "__main__":
+    import asyncio
+    asyncio.run(main())

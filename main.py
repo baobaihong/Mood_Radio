@@ -7,8 +7,6 @@ from host import host
 from rp_button import handle_button_recording
 from rp_rfid import read_color
 
-# from speaker import play_audio
-
 load_dotenv()
 
 async def main():
@@ -31,15 +29,15 @@ async def main():
     # Run both coroutines concurrently
     await asyncio.gather(
         dj(color, system_prompt, True, start_opening_remark),
-        host(system_prompt, host_voice, chat_history, start_opening_remark)
+        host(system_prompt, host_voice, None, chat_history, start_opening_remark)
     )
     
     # button recording
     # print("Ready to record. Press the button to start recording...")
-    # for i in range(3):
+    # for i in range(5):
     #     print(f"Chat round {i+1}:\n")
     #     _, user_input_audio_string = handle_button_recording()
-    #     chat_history = host(system_prompt, host_voice, user_input_audio_string, chat_history)
+    #     chat_history = await host(system_prompt, host_voice, user_input_audio_string, chat_history)
 
 if __name__ == "__main__":
     asyncio.run(main())
