@@ -29,4 +29,54 @@ A Raspberry Pi-based interactive radio host system that combines RFID color dete
 ## Installation
 
 1. Clone the repository
-2. Install required packages:
+2. Install required packages: 
+    pip install spotipy openai python-dotenv pyaudio wave gpiozero mfrc522
+3. Create a `.env` file with the following configurations:
+    OPENAI_API_KEY=your_openai_api_key
+    SPOTIFY_CLIENT_ID=your_spotify_client_id
+    SPOTIFY_CLIENT_SECRET=your_spotify_client_secret
+    SPOTIFY_REDIRECT_URI=your_spotify_redirect_uri
+    YELLOW_PROMPT=your_yellow_theme_prompt
+    BLUE_PROMPT=your_blue_theme_prompt
+
+## Usage
+
+1. Run the main program:
+    python main.py
+2. Present an RFID card to set the theme (yellow or blue)
+3. The system will:
+   - Select appropriate background music
+   - Generate an opening remark
+   - Begin listening for user input
+
+## Development Mode
+
+The system includes mock implementations for GPIO, RFID, and button interfaces when running on non-Raspberry Pi systems. This allows for development and testing on regular computers.
+
+## Project Structure
+
+- `main.py`: Main application entry point
+- `rp_rfid.py`: RFID handling and color detection
+- `dj.py`: Music selection and playback control
+- `host.py`: AI host interaction and speech generation
+- `recorder.py`: Audio recording functionality
+- `speaker.py`: Audio playback functionality
+- `openai_client.py`: OpenAI API client configuration
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Commit your changes
+4. Push to the branch
+5. Create a Pull Request
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Acknowledgments
+
+- OpenAI for GPT and text-to-speech capabilities
+- Spotify for music playback integration
+- The Raspberry Pi community for GPIO and RFID libraries
